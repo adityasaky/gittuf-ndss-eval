@@ -11,41 +11,16 @@
 
 import shutil
 import os
-import shlex
-import subprocess
 import tempfile
 import click
 
-NO_PROMPT = False
+import utils
+
 REQUIRED_BINARIES = ["git", "gittuf", "ssh-keygen"]
 
 REPOSITORY_STEPS = 3
 GITTUF_STEPS = 10
 DEMO_STEPS = 2
-
-def _check_binaries():
-    for p in REQUIRED_BINARIES:
-        if not shutil.which(p):
-            raise Exception(f"required command {p} not found")
-
-def _prompt_key(opnum, optotal, prompt):
-    if NO_PROMPT:
-        print(f"\n({opnum} / {optotal}): {prompt}")
-        return
-    inp = False
-    while inp != "":
-        try:
-            inp = input(f"\n({opnum} / {optotal}): {prompt} -- press any key to continue")
-        except Exception:
-            pass
-
-def _display_command(cmd):
-    print(f"[{os.getcwd()}] $ {cmd}")
-
-def _run_command(cmd, expected_retcode):
-    retcode = subprocess.call(shlex.split(cmd))
-    if retcode != expected_retcode:
-        raise Exception(f"Expected {expected_retcode} from process but it exited with {retcode}.")
 
 @click.command()
 @click.option(
@@ -57,14 +32,12 @@ def _run_command(cmd, expected_retcode):
 def experiment1(automatic, repository_directory):
     """Experiment 1 for NDSS Artifact Evaluation"""
 
-    if automatic:
-        global NO_PROMPT
-        NO_PROMPT = True
+    print("gittuf NDSS Artifact Evaluation - Experiment 1")
 
     # Repository Setup
     print("[1 / 3] Repository Setup ------------------------------------------")
 
-    repository_counter = 1
+    step = 1
 
     # Set up directory structure and keys
     current_dir = os.getcwd()
@@ -89,77 +62,79 @@ def experiment1(automatic, repository_directory):
     authorized_key_path_policy = os.path.join(tmp_keys_dir, "authorized.pub")
 
     # Initialize the Git repository in the chosen directory
-    _prompt_key(1, REPOSITORY_STEPS, "Initialize Git repository")
+    step = utils.prompt_key(automatic, step, REPOSITORY_STEPS, "Initialize Git repository")
     cmd = "git init -b main"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
     # Set the configuration options needed to sign commits. For this demo, the
     # "authorized" key is used, but note that this is not the key used for
     # managing the policy.
-    _prompt_key(2, REPOSITORY_STEPS, "Set repo config to use demo identity and test key")
+    step = utils.prompt_key(automatic, step, REPOSITORY_STEPS, "Set repo config to use demo identity and test key")
     cmd = "git config --local gpg.format ssh"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
     cmd = "git config --local commit.gpgsign true"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
     cmd = f"git config --local user.signingkey {authorized_key_path_git}"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
     cmd = "git config --local user.name gittuf-demo"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
     cmd = "git config --local user.email gittuf.demo@example.com"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(3, REPOSITORY_STEPS, "Set PAGER")
+    step = utils.prompt_key(automatic, step, REPOSITORY_STEPS, "Set PAGER")
     os.environ["PAGER"] = "cat"
-    _display_command("export PAGER=cat")
+    utils.display_command("export PAGER=cat")
 
     # gittuf Setup
     print("\n[2 / 3] gittuf Setup ----------------------------------------------")
 
-    _prompt_key(1, GITTUF_STEPS, "Initialize gittuf root of trust")
-    cmd = "gittuf trust init -k ../keys/root"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    step = 1
 
-    _prompt_key(2, GITTUF_STEPS, "Trust developer 1's key for the policy")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Initialize gittuf root of trust")
+    cmd = "gittuf trust init -k ../keys/root"
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
+
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Trust developer 1's key for the policy")
     cmd = (
         "gittuf trust add-policy-key"
         " -k ../keys/root"
         " --policy-key ../keys/developer1.pub"
     )
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(3, GITTUF_STEPS, "Trust developer 2's key for the policy")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Trust developer 2's key for the policy")
     cmd = (
         "gittuf trust add-policy-key"
         " -k ../keys/root"
         " --policy-key ../keys/developer2.pub"
     )
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(4, GITTUF_STEPS, "Set policy threshold to 2 signatures")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Set policy threshold to 2 signatures")
     cmd = ("gittuf trust update-policy-threshold -k ../keys/root --threshold 2")
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(5, GITTUF_STEPS, "Initialize policy with developer 1's key")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Initialize policy with developer 1's key")
     cmd = "gittuf policy init -k ../keys/developer1"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(6, GITTUF_STEPS, "Sign policy with developer 2's key")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Sign policy with developer 2's key")
     cmd = "gittuf policy sign -k ../keys/developer2"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(7, GITTUF_STEPS, "Developer 1 adds rule to protect the main branch")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Developer 1 adds rule to protect the main branch")
     cmd = (
         "gittuf policy add-rule"
         " -k ../keys/developer1"
@@ -167,28 +142,30 @@ def experiment1(automatic, repository_directory):
         " --rule-pattern git:refs/heads/main"
         f" --authorize-key {authorized_key_path_policy}"
     )
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(8, GITTUF_STEPS, "Sign policy with developer 2's key")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Sign policy with developer 2's key")
     cmd = "gittuf policy sign -k ../keys/developer2"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(9, GITTUF_STEPS, "Apply the policy")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Apply the policy")
     cmd = "gittuf policy apply"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(10, GITTUF_STEPS, "Verify branch protection for this change")
+    step = utils.prompt_key(automatic, step, GITTUF_STEPS, "Verify branch protection for this change")
     cmd = "gittuf verify-ref refs/gittuf/policy"
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
     # Policy demonstration
     print("\n[3 / 3] gittuf Verification ----------------------------------------------")
 
-    _prompt_key(1, DEMO_STEPS, "Developer 1 adds rule to protect the feature branch")
+    step = 1
+
+    step = utils.prompt_key(automatic, step, DEMO_STEPS, "Developer 1 adds rule to protect the feature branch")
     cmd = (
         "gittuf policy add-rule"
         " -k ../keys/developer1"
@@ -196,17 +173,17 @@ def experiment1(automatic, repository_directory):
         " --rule-pattern git:refs/heads/main"
         f" --authorize-key {authorized_key_path_policy}"
     )
-    _display_command(cmd)
-    _run_command(cmd, 0)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 0)
 
-    _prompt_key(2, DEMO_STEPS, "Developer 1 attempts to apply the policy...")
+    step = utils.prompt_key(automatic, step, DEMO_STEPS, "Developer 1 attempts to apply the policy...")
     cmd = "gittuf policy apply"
-    _display_command(cmd)
-    _run_command(cmd, 1)
+    utils.display_command(cmd)
+    utils.run_command(cmd, 1)
 
     print("...but is unable to due to both developers needing to approve.")
 
 
 if __name__ == "__main__":
-    _check_binaries()
+    utils.check_binaries(REQUIRED_BINARIES)
     experiment1()
