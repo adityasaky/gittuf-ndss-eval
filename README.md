@@ -46,3 +46,40 @@ Each script file supports the same options as follows:
 - `--repository-directory <directory>`: Set a custom directory for the working
   repository. Note that this directory is not automatically deleted by the
   script after it exits.
+
+## Experiment Details
+
+### Experiment 1 - Unilateral Policy Modification
+
+This experiment simulates a scenario with a repository owner (with key `root`)
+creating a gittuf-enabled repository and delegating trust in the policy to two
+developers (with keys `developer1` and `developer2`, respectively). To prevent a
+single developer from making changes themselves, the threshold for policy
+metadata signatures is set to two.
+
+Developer 1 and 2 initialize and set a rule to protect the main branch in the
+policy, with both developers signing off on the change.
+
+Developer 1 then attempts to add another rule without developer 2's agreement,
+which causes verification to fail.
+
+### Experiment 2
+
+In progress.
+
+### Experiment 3 - RSL Divergence
+
+This experiment simulates a scenario with a repository owner creating a
+gittuf-enabled repository and making a commit. Another user unrelated to the
+first developer (but with read access to the repository) then clones the
+repository.
+
+The original developer then goes back and overwrites the first commit with a
+malicious edit. The other user attempts to pull the changes, but is warned by
+git that there is a mismatch. The user overrides the warning, but upon pulling
+the RSL, gittuf raises an alarm that the RSL entry that they have does not match
+the overwritten commit that has been recently pulled.
+
+### Experiment 4
+
+In progress.
