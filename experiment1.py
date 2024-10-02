@@ -167,8 +167,8 @@ def experiment1(automatic, repository_directory):
     run_command(cmd, 0)
 
     # Ensure that everything is OK by verifying the state of the repository
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Verify branch protection for this change")
-    cmd = "gittuf verify-ref refs/gittuf/policy"
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Verify policy")
+    cmd = "gittuf --verbose verify-ref refs/gittuf/policy"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -191,7 +191,7 @@ def experiment1(automatic, repository_directory):
 
     # Attempt to apply the new policy
     step = prompt_key(automatic, step, DEMO_STEPS, "Developer 1 attempts to apply the policy...")
-    cmd = "gittuf policy apply"
+    cmd = "gittuf --verbose policy apply"
     display_command(cmd)
     run_command(cmd, 1)
 

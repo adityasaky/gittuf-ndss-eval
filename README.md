@@ -51,11 +51,13 @@ Each script file supports the same options as follows:
 
 ### Experiment 1 - Unilateral Policy Modification
 
-This experiment simulates a scenario with a repository owner (with key `root`)
-creating a gittuf-enabled repository and delegating trust in the policy to two
-developers (with keys `developer1` and `developer2`, respectively). To prevent a
-single developer from making changes themselves, the threshold for policy
-metadata signatures is set to two.
+This experiment simulates a scenario where a single developer is blocked from
+editing a policy that was configured to require two developers to sign off.
+
+First, a repository owner (with key `root`) creates a gittuf-enabled repository
+and delegates trust in the policy to two developers (with keys `developer1` and
+`developer2`, respectively). To prevent a single developer from making changes
+themselves, the threshold for policy metadata signatures is set to two.
 
 Developer 1 and 2 initialize and set a rule to protect the main branch in the
 policy, with both developers signing off on the change.
@@ -69,10 +71,12 @@ In progress.
 
 ### Experiment 3 - RSL Divergence
 
-This experiment simulates a scenario with a repository owner creating a
-gittuf-enabled repository and making a commit. Another user unrelated to the
-first developer (but with read access to the repository) then clones the
-repository.
+This experiment simulates a scenario focusing on how  gittuf's Reference State
+Log (RSL) propagates across repository copies.
+
+First, a repository owner creates a gittuf-enabled repository and makes a
+commit. Another user unrelated to the first developer (but with read access to
+the repository) then clones the repository.
 
 The original developer then goes back and overwrites the first commit with a
 malicious edit. The other user attempts to pull the changes, but is warned by
@@ -80,6 +84,17 @@ git that there is a mismatch. The user overrides the warning, but upon pulling
 the RSL, git raises an alarm that the RSL entry that there has been a divergence
 in the RSL history.
 
-### Experiment 4
+### Experiment 4 - Policy Violation and Independent Verification
 
-In progress.
+This experiment simulates a scenario where an user writes to a part of a
+repository they are not allowed to; another user then pulls the latest copy of
+the repository and then attempts to verify the changes.
+
+A repository owner creates a gittuf-enabled repository and sets policy
+authorizing a user (with key `developer1`) to make changes to the main branch.
+Another user (with key `developer2`), who is only allowed to edit the
+`feature` branch, submits a commit that affects the `main` branch.
+
+Another developer then clones the repository onto their machine and attempts to
+verify the changes, but gittuf raises an alert that an unauthorized signature is
+on a commit (against the policy).
