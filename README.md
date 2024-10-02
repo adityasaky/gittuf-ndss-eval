@@ -77,8 +77,8 @@ repository.
 The original developer then goes back and overwrites the first commit with a
 malicious edit. The other user attempts to pull the changes, but is warned by
 git that there is a mismatch. The user overrides the warning, but upon pulling
-the RSL, gittuf raises an alarm that the RSL entry that they have does not match
-the overwritten commit that has been recently pulled.
+the RSL, git raises an alarm that the RSL entry that there has been a divergence
+in the RSL history.
 
 ### Experiment 4
 

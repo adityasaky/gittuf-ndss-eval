@@ -20,7 +20,7 @@ REQUIRED_BINARIES = ["git", "gittuf", "ssh-keygen"]
 
 REPOSITORY_STEPS = 3
 GITTUF_STEPS = 8
-DEMO_STEPS = 7
+DEMO_STEPS = 4
 
 @click.command()
 @click.option(
