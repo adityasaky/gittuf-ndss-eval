@@ -19,8 +19,8 @@ from utils import prompt_key, display_command, run_command, check_binaries
 REQUIRED_BINARIES = ["git", "gittuf", "ssh-keygen"]
 
 REPOSITORY_STEPS = 3
-GITTUF_STEPS = 8
-DEMO_STEPS = 4
+GITTUF_STEPS = 5
+DEMO_STEPS = 14
 
 @click.command()
 @click.option(
@@ -47,23 +47,27 @@ def experiment3(automatic, repository_directory):
     tmp_dir = tempfile.TemporaryDirectory()
     tmp_keys_dir = os.path.join(tmp_dir.name, keys_dir)
 
-    # Repo A is the "origin" repo for Repo B
+    # "repo_server" is the remote repo for "repo_a" and "repo_b"
+    tmp_repo_server_dir = os.path.join(tmp_dir.name, "repo_server")
     tmp_repo_a_dir = os.path.join(tmp_dir.name, "repo_a")
     tmp_repo_b_dir = os.path.join(tmp_dir.name, "repo_b")
 
     shutil.copytree(os.path.join(current_dir, keys_dir), tmp_keys_dir)
-    os.mkdir(tmp_repo_a_dir)
-    # os.mkdir(tmp_repo_b_dir)
-    os.chdir(tmp_repo_a_dir)
+    os.mkdir(tmp_repo_server_dir)
+    os.chdir(tmp_repo_server_dir)
 
     # Ensure correct permissions for keys
     for key in os.listdir(tmp_keys_dir):
         os.chmod(os.path.join(tmp_keys_dir, key), 0o600)
 
     # Compute folder paths
-    authorized_key_path_git = os.path.join(tmp_keys_dir, "authorized.pub")
+    authorized_key_path_git = os.path.join(tmp_keys_dir, "authorized")
+    dev1_key_path_git = os.path.join(tmp_keys_dir, "developer1")
+    dev2_key_path_git = os.path.join(tmp_keys_dir, "developer2")
 
     authorized_key_path_policy = os.path.join(tmp_keys_dir, "authorized.pub")
+    dev1_key_path_policy = os.path.join(tmp_keys_dir, "developer1.pub")
+    dev2_key_path_policy = os.path.join(tmp_keys_dir, "developer2.pub")
 
     # Initialize the Git repository in the chosen directory
     step = prompt_key(automatic, step, REPOSITORY_STEPS, "Initialize Git repository")
@@ -84,10 +88,14 @@ def experiment3(automatic, repository_directory):
     cmd = f"git config --local user.signingkey {authorized_key_path_git}"
     display_command(cmd)
     run_command(cmd, 0)
-    cmd = "git config --local user.name gittuf-demo"
+    cmd = "git config --local user.name gittuf-demo authorized-user"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local user.email gittuf.demo@example.com"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    cmd = "git config receive.denyCurrentBranch ignore"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -126,6 +134,8 @@ def experiment3(automatic, repository_directory):
         " --rule-name 'protect-main'"
         " --rule-pattern git:refs/heads/main"
         f" --authorize-key {authorized_key_path_policy}"
+        f" --authorize-key {dev1_key_path_policy}"
+        f" --authorize-key {dev2_key_path_policy}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -135,7 +145,12 @@ def experiment3(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Make change to repo's main branch")
+    # RSL Demonstration
+    print("\n[3 / 3] RSL Demonstration ----------------------------------------------")
+
+    step = 1
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's main branch")
     display_command("echo 'Hello, world!' > README.md")
     with open("README.md", "w") as fp:
         fp.write("Hello, world!\n")
@@ -145,8 +160,50 @@ def experiment3(automatic, repository_directory):
     cmd = "git commit -m 'Initial commit'"
     display_command(cmd)
     run_command(cmd, 0)
+    cmd = "gittuf rsl record main"
+    display_command(cmd)
+    run_command(cmd, 0)
 
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Record change to main in RSL")
+    step = prompt_key(automatic, step, DEMO_STEPS, "User A clones the git repository")
+    cmd = f"cd {tmp_dir.name}"
+    display_command(cmd)
+    os.chdir(tmp_dir.name)
+    cmd = f"gittuf clone {tmp_repo_server_dir} repo_a"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = f"cd {tmp_repo_a_dir}"
+    display_command(cmd)
+    os.chdir(tmp_repo_a_dir)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Set repo config to use dev1 identity and test key")
+    cmd = "git config --local gpg.format ssh"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local commit.gpgsign true"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = f"git config --local user.signingkey {dev1_key_path_git}"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local user.name gittuf-demo"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local user.email gittuf.demo@example.com"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's main branch")
+    display_command("echo 'Hello, new world!' > README.md")
+    with open("README.md", "w") as fp:
+        fp.write("Hello, new world!\n")
+    cmd = "git add README.md"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git commit -m 'Another commit'"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Record change to main in RSL")
     cmd = "gittuf rsl record main"
     display_command(cmd)
     run_command(cmd, 0)
@@ -154,38 +211,109 @@ def experiment3(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Verify branch protection for this change")
+    step = prompt_key(automatic, step, DEMO_STEPS, "Verify branch protection for this change")
     cmd = "gittuf --verbose verify-ref main"
     display_command(cmd)
     run_command(cmd, 0)
 
-
-    # RSL Manipulation
-    print("\n[3 / 3] RSL Manipulation ----------------------------------------------")
-
-    step = 1
-
-    step = prompt_key(automatic, step, DEMO_STEPS, "Another user clones the git repository")
-    cmd = f"cd {tmp_dir.name}"
+    step = prompt_key(automatic, step, DEMO_STEPS, "User A pushes changes to the remote")
+    cmd = "git push"
     display_command(cmd)
-    os.chdir(tmp_dir.name)
-    cmd = f"gittuf clone {tmp_repo_a_dir} repo_b"
+    run_command(cmd, 0)
+    cmd = "gittuf rsl remote push origin"
     display_command(cmd)
     run_command(cmd, 0)
 
-
-    cmd = f"cd {tmp_repo_a_dir}"
+    step = prompt_key(automatic, step, DEMO_STEPS, "Server drops the latest push")
+    cmd = f"cd {tmp_repo_server_dir}"
     display_command(cmd)
-    os.chdir(tmp_repo_a_dir)
-
-    step = prompt_key(automatic, step, DEMO_STEPS, "The original repository owner rolls back the RSL and rewrites history")
-    cmd = "git commit --amend -m 'Evil commit message'"
+    os.chdir(tmp_repo_server_dir)
+    cmd = "git reset --hard HEAD~1"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git update-ref refs/gittuf/reference-state-log refs/gittuf/reference-state-log~1"
     display_command(cmd)
     run_command(cmd, 0)
-    cmd = "gittuf rsl record"
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "User B clones the git repository")
+    cmd = f"cd {tmp_dir.name}"
+    display_command(cmd)
+    os.chdir(tmp_dir.name)
+    cmd = f"gittuf clone {tmp_repo_server_dir} repo_b"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    cmd = f"cd {tmp_repo_b_dir}"
+    display_command(cmd)
+    os.chdir(tmp_repo_b_dir)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Set repo config to use dev2 identity and test key")
+    cmd = "git config --local gpg.format ssh"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local commit.gpgsign true"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = f"git config --local user.signingkey {dev2_key_path_git}"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local user.name gittuf-demo"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local user.email gittuf.demo@example.com"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's main branch")
+    display_command("echo 'Hello, newer world!' > README.md")
+    with open("README.md", "w") as fp:
+        fp.write("Hello, newer world!\n")
+    cmd = "git add README.md"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git commit -m 'Yet another commit'"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "gittuf rsl record main"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Verify branch protection for this change")
+    cmd = "gittuf --verbose verify-ref main"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "User B pushes changes to the remote")
+    cmd = "git push"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "gittuf rsl remote push origin"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "User A attempts to pull the latest changes...")
+    cmd = f"cd {tmp_repo_a_dir}"
+    display_command(cmd)
+    os.chdir(tmp_repo_a_dir)
+    cmd = "git pull"
+    display_command(cmd)
+    run_command(cmd, 128)
+
+    print("... but is warned that something has happened.")
+
+if __name__ == "__main__":
+    check_binaries(REQUIRED_BINARIES)
+    experiment3() # pylint: disable=no-value-for-parameter
+
+# ---- Cut here when ready to clean up ----
+    # step = prompt_key(automatic, step, DEMO_STEPS, "The original repository owner rolls back the RSL and rewrites history")
+    # cmd = "git commit --amend -m 'Evil commit message'"
+    # display_command(cmd)
+    # run_command(cmd, 0)
+    # cmd = "git update-ref refs/gittuf/reference-state-log refs/gittuf/reference-state-log~1"
+    # display_command(cmd)
+    # run_command(cmd, 0)
+    # cmd = "gittuf rsl record"
 
     # step = prompt_key(automatic, step, DEMO_STEPS, "Make evil change to repo's main branch with an authorized key")
     # display_command("echo 'Hello, WORLD!' > README.md")
@@ -198,24 +326,26 @@ def experiment3(automatic, repository_directory):
     # display_command(cmd)
     # run_command(cmd, 0)
 
-    step = prompt_key(automatic, step, DEMO_STEPS, "The other user attempts to fetch changes, but is warned that a branch has changed")
-    cmd = "cd repo_b"
-    display_command(cmd)
-    os.chdir(tmp_repo_b_dir)
-    cmd = "git pull"
-    display_command(cmd)
-    run_command(cmd, 128)
-    cmd = "git reset --hard @{upstream}"
-    display_command(cmd)
-    run_command(cmd, 0)
+    # step = prompt_key(automatic, step, DEMO_STEPS, "The other user attempts to fetch changes, but is warned that a branch has changed")
+    # cmd = "cd repo_b"
+    # display_command(cmd)
+    # os.chdir(tmp_repo_b_dir)
+    # cmd = "git pull"
+    # display_command(cmd)
+    # run_command(cmd, 128)
+    # cmd = "git reset --hard @{upstream}"
+    # display_command(cmd)
+    # run_command(cmd, 0)
 
-    step = prompt_key(automatic, step, DEMO_STEPS, "Now, the user attempts to pull the RSL, and is also warned that something is amiss")
-    cmd = "gittuf rsl remote pull origin"
-    display_command(cmd)
-    run_command(cmd, 1)
+    # step = prompt_key(automatic, step, DEMO_STEPS, "Now, the user attempts to pull the RSL, and is also warned that something is amiss")
+    # cmd = "gittuf rsl remote pull origin"
+    # display_command(cmd)
+    # run_command(cmd, 1)
 
-    print("... but is warned that something has happened.")
+    # cmd = "gittuf rsl remote pull origin"
+    # display_command(cmd)
+    # run_command(cmd, 0)
 
-if __name__ == "__main__":
-    check_binaries(REQUIRED_BINARIES)
-    experiment3() # pylint: disable=no-value-for-parameter
+    # cmd = "gittuf --verbose verify-ref main"
+    # display_command(cmd)
+    # run_command(cmd, 0)
