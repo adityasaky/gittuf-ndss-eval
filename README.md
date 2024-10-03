@@ -8,6 +8,7 @@ as presented in the paper.
 Before building and evaluating gittuf, you will need to install a few packages:
 
 - A recent version of Python
+  - The `click` library
 - Git 2.43 or greater
 - GNU `make`
 - The Go toolchain
@@ -71,18 +72,18 @@ In progress.
 
 ### Experiment 3 - RSL Divergence
 
-This experiment simulates a scenario focusing on how  gittuf's Reference State
+This experiment simulates a scenario focusing on how gittuf's Reference State
 Log (RSL) propagates across repository copies.
 
 First, a repository owner creates a gittuf-enabled repository and makes a
-commit. Another user unrelated to the first developer (but with read access to
-the repository) then clones the repository.
+commit. User A then clones the repository and makes a change (authorized by the
+policy), and then pushes their changes. The upstream repository owner drops
+these changes.
 
-The original developer then goes back and overwrites the first commit with a
-malicious edit. The other user attempts to pull the changes, but is warned by
-git that there is a mismatch. The user overrides the warning, but upon pulling
-the RSL, git raises an alarm that the RSL entry that there has been a divergence
-in the RSL history.
+User B then clones the repository, unaware as to what has happened. The user
+makes a commit and pushes it to the remote repository. User A then attempts to
+pull the latest changes, but is warned that their branch has diverged from what
+is on the remote repository.
 
 ### Experiment 4 - Policy Violation and Independent Verification
 
@@ -92,8 +93,8 @@ the repository and then attempts to verify the changes.
 
 A repository owner creates a gittuf-enabled repository and sets policy
 authorizing a user (with key `developer1`) to make changes to the main branch.
-Another user (with key `developer2`), who is only allowed to edit the
-`feature` branch, submits a commit that affects the `main` branch.
+Another user (with key `developer2`), who is only allowed to edit the `feature`
+branch, submits a commit that affects the `main` branch.
 
 Another developer then clones the repository onto their machine and attempts to
 verify the changes, but gittuf raises an alert that an unauthorized signature is
