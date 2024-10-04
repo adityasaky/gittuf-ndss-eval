@@ -3,7 +3,29 @@
 This repository contains the scripts and documentation needed to evaluate gittuf
 as presented in the paper "Rethinking Trust in Forge-Based Git Security".
 
-## Prerequisites
+## Using the Dockerfile
+
+This repository includes a Dockerfile that will configure a container with the
+experiments.
+
+**To clone this repository, run:**
+
+```sh
+git clone https://github.com/adityasaky/gittuf-ndss-eval
+cd gittuf-ndss-eval
+```
+
+**To build and run the container, run:**
+
+```sh
+docker build -t gittuf-ndss-eval .
+docker run -it gittuf-ndss-eval
+```
+
+Then, proceed to "experiment details" below to run the experiment scripts in the
+container.
+
+## Pre-requisites
 
 Before building and evaluating gittuf, you will need to install a few packages:
 
