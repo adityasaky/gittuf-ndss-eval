@@ -4,7 +4,7 @@
 #
 #        experiment1.py - The gittuf NDSS Artifact Evaluation Demo, pt. 1
 #
-#            This script demonstrates the policy features of gittuf.
+#       This script demonstrates the policy declaration features of gittuf.
 #
 ################################################################################
 
@@ -13,7 +13,7 @@ import shutil
 import tempfile
 import click
 
-from utils import prompt_key, display_command, run_command, check_binaries
+from utils import prompt_key, display_command, run_command, check_binaries, print_section
 
 REQUIRED_BINARIES = ["git", "gittuf", "ssh-keygen"]
 
@@ -36,7 +36,7 @@ def experiment1(automatic, repository_directory):
     print("gittuf NDSS Artifact Evaluation - Experiment 1")
 
     # Repository Setup
-    print("[1 / 3] Repository Setup ------------------------------------------")
+    print_section("[1 / 3] Repository Setup")
 
     step = 1
 
@@ -49,12 +49,14 @@ def experiment1(automatic, repository_directory):
     if working_dir == "":
         tmp_dir =  tempfile.TemporaryDirectory()
         working_dir = tmp_dir.name
+    else:
+        working_dir = os.path.abspath(repository_directory)
 
     # Set directory variables accordingly
     tmp_keys_dir = os.path.join(working_dir, keys_dir)
     tmp_repo_dir = os.path.join(working_dir, "repo")
 
-    shutil.copytree(os.path.join(current_dir, keys_dir), tmp_keys_dir)
+    tmp_keys_dir = shutil.copytree(os.path.join(current_dir, keys_dir), tmp_keys_dir)
     os.mkdir(tmp_repo_dir)
     os.chdir(tmp_repo_dir)
 
@@ -63,13 +65,14 @@ def experiment1(automatic, repository_directory):
         os.chmod(os.path.join(tmp_keys_dir, key), 0o600)
 
     # Compute folder paths
-    authorized_key_path_git = os.path.join(tmp_keys_dir, "authorized.pub")
-    dev1_key_path_git = os.path.join(tmp_keys_dir, "developer1")
-    dev2_key_path_git = os.path.join(tmp_keys_dir, "developer2")
+    root_private_key_path = os.path.join(tmp_keys_dir, "root")
+    authorized_private_key_path = os.path.join(tmp_keys_dir, "authorized")
+    dev1_private_key_path = os.path.join(tmp_keys_dir, "developer1")
+    dev2_private_key_path = os.path.join(tmp_keys_dir, "developer2")
 
-    authorized_key_path_policy = os.path.join(tmp_keys_dir, "authorized.pub")
-    dev1_key_path_policy = os.path.join(tmp_keys_dir, "developer1.pub")
-    dev2_key_path_policy = os.path.join(tmp_keys_dir, "developer2.pub")
+    authorized_public_key_path = os.path.join(tmp_keys_dir, "authorized.pub")
+    dev1_public_key_path = os.path.join(tmp_keys_dir, "developer1.pub")
+    dev2_public_key_path = os.path.join(tmp_keys_dir, "developer2.pub")
 
     # Initialize the Git repository in the chosen directory
     step = prompt_key(automatic, step, REPOSITORY_STEPS, "Initialize Git repository")
@@ -88,7 +91,7 @@ def experiment1(automatic, repository_directory):
     cmd = "git config --local commit.gpgsign true"
     display_command(cmd)
     run_command(cmd, 0)
-    cmd = f"git config --local user.signingkey {authorized_key_path_git}"
+    cmd = f"git config --local user.signingkey {authorized_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local user.name gittuf-demo"
@@ -103,14 +106,14 @@ def experiment1(automatic, repository_directory):
     display_command("export PAGER=cat")
 
     # gittuf Setup
-    print("\n[2 / 3] gittuf Setup ----------------------------------------------")
+    print_section("[2 / 3] gittuf Setup")
 
     step = 1
 
     # Initialize gittuf's root of trust
     step = prompt_key(automatic, step, GITTUF_STEPS,
     "Initialize gittuf root of trust")
-    cmd = "gittuf trust init -k ../keys/root"
+    cmd = f"gittuf trust init -k {root_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -119,8 +122,8 @@ def experiment1(automatic, repository_directory):
     "Trust developer 1's key for the policy")
     cmd = (
         "gittuf trust add-policy-key"
-        " -k ../keys/root"
-        f" --policy-key {dev1_key_path_policy}"
+        f" -k {root_private_key_path}"
+        f" --policy-key {dev1_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -130,8 +133,8 @@ def experiment1(automatic, repository_directory):
     "Trust developer 2's key for the policy")
     cmd = (
         "gittuf trust add-policy-key"
-        " -k ../keys/root"
-        f" --policy-key {dev2_key_path_policy}"
+        f" -k {root_private_key_path}"
+        f" --policy-key {dev2_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -140,14 +143,14 @@ def experiment1(automatic, repository_directory):
     # developers)
     step = prompt_key(automatic, step, GITTUF_STEPS,
     "Set policy threshold to 2 signatures")
-    cmd = "gittuf trust update-policy-threshold -k ../keys/root --threshold 2"
+    cmd = f"gittuf trust update-policy-threshold -k {root_private_key_path} --threshold 2"
     display_command(cmd)
     run_command(cmd, 0)
 
     # Initialize the policy (by using developer 1's key)
     step = prompt_key(automatic, step, GITTUF_STEPS,
     "Initialize policy with developer 1's key")
-    cmd = "gittuf policy init -k ../keys/developer1"
+    cmd = f"gittuf policy init -k {dev1_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -155,7 +158,7 @@ def experiment1(automatic, repository_directory):
     # We must do this since we cannot sign a commit with two keys
     step = prompt_key(automatic, step, GITTUF_STEPS,
     "Sign policy with developer 2's key")
-    cmd = "gittuf policy sign -k ../keys/developer2"
+    cmd = f"gittuf policy sign -k {dev2_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -164,10 +167,10 @@ def experiment1(automatic, repository_directory):
     "Developer 1 adds rule to protect the main branch")
     cmd = (
         "gittuf policy add-rule"
-        " -k ../keys/developer1"
+        f" -k {dev1_private_key_path}"
         " --rule-name 'protect-main'"
         " --rule-pattern git:refs/heads/main"
-        f" --authorize-key {authorized_key_path_policy}"
+        f" --authorize-key {authorized_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -175,7 +178,7 @@ def experiment1(automatic, repository_directory):
     # Developer 2 approves and signs the policy
     step = prompt_key(automatic, step, GITTUF_STEPS,
     "Sign policy with developer 2's key")
-    cmd = "gittuf policy sign -k ../keys/developer2"
+    cmd = f"gittuf policy sign -k {dev2_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -192,7 +195,7 @@ def experiment1(automatic, repository_directory):
     run_command(cmd, 0)
 
     # Policy demonstration
-    print("\n[3 / 3] Policy Violation ----------------------------------------------")
+    print_section("[3 / 3] Policy Violation")
 
     step = 1
 
@@ -201,10 +204,10 @@ def experiment1(automatic, repository_directory):
     "Developer 1 adds rule to protect the feature branch")
     cmd = (
         "gittuf policy add-rule"
-        " -k ../keys/developer1"
+        f" -k ../keys/developer1"
         " --rule-name 'protect-feature'"
         " --rule-pattern git:refs/heads/main"
-        f" --authorize-key {authorized_key_path_policy}"
+        f" --authorize-key {authorized_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)

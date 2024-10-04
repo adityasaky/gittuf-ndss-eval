@@ -4,24 +4,21 @@
 #
 #        experiment2.py - The gittuf NDSS Artifact Evaluation Demo, pt. 2
 #
-#  This script creates a repository and runs various tests on it, demonstrating
-#              gittuf's ability to meet our claims in the paper.
+#          This script demonstrates the delegation features of gittuf.
 #
 ################################################################################
 
-import shutil
 import os
-import shlex
-import subprocess
+import shutil
 import tempfile
 import click
 
-from utils import prompt_key, display_command, run_command, check_binaries
+from utils import prompt_key, display_command, run_command, check_binaries, print_section
 
 REQUIRED_BINARIES = ["git", "gittuf", "ssh-keygen"]
 
 REPOSITORY_STEPS = 3
-GITTUF_STEPS = 8
+GITTUF_STEPS = 9
 DEMO_STEPS = 4
 
 @click.command()
@@ -39,7 +36,7 @@ def experiment2(automatic, repository_directory):
     print("gittuf NDSS Artifact Evaluation - Experiment 2")
 
  # Repository Setup
-    print("[1 / 3] Repository Setup ------------------------------------------")
+    print_section("[1 / 3] Repository Setup")
 
     step = 1
 
@@ -52,6 +49,8 @@ def experiment2(automatic, repository_directory):
     if working_dir == "":
         tmp_dir =  tempfile.TemporaryDirectory()
         working_dir = tmp_dir.name
+    else:
+        working_dir = os.path.abspath(repository_directory)
 
     tmp_keys_dir = os.path.join(working_dir, keys_dir)
     tmp_repo_dir = os.path.join(working_dir, "repo")
@@ -70,9 +69,8 @@ def experiment2(automatic, repository_directory):
     targets_private_key_path = os.path.join(tmp_keys_dir, "targets")
     dev1_private_key_path = os.path.join(tmp_keys_dir, "developer1")
     dev2_private_key_path = os.path.join(tmp_keys_dir, "developer2")
-    dev3_private_key_path = os.path.join(tmp_keys_dir, "developer3")
 
-    targets_public_key_path = os.path.join(tmp_keys_dir, "targets")
+    targets_public_key_path = os.path.join(tmp_keys_dir, "targets.pub")
     dev1_public_key_path = os.path.join(tmp_keys_dir, "developer1.pub")
     dev2_public_key_path = os.path.join(tmp_keys_dir, "developer2.pub")
     dev3_public_key_path = os.path.join(tmp_keys_dir, "developer3.pub")
@@ -109,13 +107,13 @@ def experiment2(automatic, repository_directory):
     display_command("export PAGER=cat")
 
     # gittuf Setup
-    print("\n[2 / 3] gittuf Setup ----------------------------------------------")
+    print_section("[2 / 3] gittuf Setup")
 
     step = 1
 
     # Initialize gittuf's root of trust
     step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize gittuf root of trust")
-    cmd = "gittuf trust init -k ../keys/root"
+    cmd = f"gittuf trust init -k {root_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -123,7 +121,7 @@ def experiment2(automatic, repository_directory):
     step = prompt_key(automatic, step, GITTUF_STEPS, "Add policy key to gittuf root of trust")
     cmd = (
         "gittuf trust add-policy-key"
-        " -k ../keys/root"
+        f" -k {root_private_key_path}"
         f" --policy-key {targets_public_key_path}"
     )
     display_command(cmd)
@@ -189,11 +187,12 @@ def experiment2(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    # RSL Manipulation
-    print("\n[3 / 3] Delegation Violation ----------------------------------------------")
+    # Policy Violation
+    print_section("[3 / 3] Policy Violation")
 
     step = 1
 
+    # Set the git configuration to sign as Developer 2
     step = prompt_key(automatic, step, DEMO_STEPS,
     "Set repo config to use dev2 identity and test key")
     cmd = "git config --local gpg.format ssh"
@@ -212,6 +211,7 @@ def experiment2(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
+    # Make a commit as Developer 2 to the feature branch
     step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's feature branch")
     cmd = "git checkout -b feature"
     display_command(cmd)
@@ -231,6 +231,7 @@ def experiment2(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
+    # Finally, verify the policy to find that the delegation was unauthorized
     step = prompt_key(automatic, step, DEMO_STEPS, "Developer 2 attempts to verify the policy...")
     cmd = "gittuf --verbose verify-ref feature"
     display_command(cmd)

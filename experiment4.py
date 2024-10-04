@@ -4,8 +4,7 @@
 #
 #        experiment1.py - The gittuf NDSS Artifact Evaluation Demo, pt. 4
 #
-#  This script creates a repository and runs various tests on it, demonstrating
-#              gittuf's ability to meet our claims in the paper.
+#      This script demonstrates the policy verification features of gittuf.
 #
 ################################################################################
 
@@ -14,7 +13,7 @@ import shutil
 import tempfile
 import click
 
-from utils import prompt_key, display_command, run_command, check_binaries
+from utils import prompt_key, display_command, run_command, check_binaries, print_section
 
 REQUIRED_BINARIES = ["git", "gittuf", "ssh-keygen"]
 
@@ -37,7 +36,7 @@ def experiment4(automatic, repository_directory):
     print("gittuf NDSS Artifact Evaluation - Experiment 4")
 
     # Repository Setup
-    print("[1 / 3] Repository Setup ------------------------------------------")
+    print_section("[1 / 3] Repository Setup")
 
     step = 1
 
@@ -50,20 +49,19 @@ def experiment4(automatic, repository_directory):
     if working_dir == "":
         tmp_dir =  tempfile.TemporaryDirectory()
         working_dir = tmp_dir.name
+    else:
+        working_dir = os.path.abspath(repository_directory)
 
     tmp_keys_dir = os.path.join(working_dir, keys_dir)
     tmp_repo_dir = os.path.join(working_dir, "repo")
 
     shutil.copytree(os.path.join(current_dir, keys_dir), tmp_keys_dir)
-    # os.mkdir(tmp_repo_dir)
-    # os.chdir(tmp_repo_dir)
 
     # Repo A is the "origin" repo for Repo B
     tmp_repo_a_dir = os.path.join(working_dir, "repo_a")
     tmp_repo_b_dir = os.path.join(working_dir, "repo_b")
 
     os.mkdir(tmp_repo_a_dir)
-    # os.mkdir(tmp_repo_b_dir)
     os.chdir(tmp_repo_a_dir)
 
     # Ensure correct permissions for keys
@@ -71,8 +69,14 @@ def experiment4(automatic, repository_directory):
         os.chmod(os.path.join(tmp_keys_dir, key), 0o600)
 
     # Compute folder paths
-    dev1_key_path_git = os.path.join(tmp_keys_dir, "developer1.pub")
-    # authorized_key_path_policy = os.path.join(tmp_keys_dir, "authorized.pub")
+    root_private_key_path = os.path.join(tmp_keys_dir, "root")
+    targets_private_key_path = os.path.join(tmp_keys_dir, "targets")
+    unauthorized_private_key_path = os.path.join(tmp_keys_dir, "unauthorized")
+    dev1_private_key_path = os.path.join(tmp_keys_dir, "developer1")
+
+    targets_public_key_path = os.path.join(tmp_keys_dir, "targets.pub")
+    dev1_public_key_path = os.path.join(tmp_keys_dir, "developer1.pub")
+    dev2_public_key_path = os.path.join(tmp_keys_dir, "developer2.pub")
 
     # Initialize the Git repository in the chosen directory
     step = prompt_key(automatic, step, REPOSITORY_STEPS, "Initialize Git repository")
@@ -90,7 +94,7 @@ def experiment4(automatic, repository_directory):
     cmd = "git config --local commit.gpgsign true"
     display_command(cmd)
     run_command(cmd, 0)
-    cmd = f"git config --local user.signingkey {dev1_key_path_git}"
+    cmd = f"git config --local user.signingkey {dev1_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local user.name gittuf-demo"
@@ -105,36 +109,36 @@ def experiment4(automatic, repository_directory):
     display_command("export PAGER=cat")
 
     # gittuf Setup
-    print("\n[2 / 3] gittuf Setup ----------------------------------------------")
+    print_section("[2 / 3] gittuf Setup")
 
     step = 1
 
     step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize gittuf root of trust")
-    cmd = "gittuf trust init -k ../keys/root"
+    cmd = f"gittuf trust init -k {root_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
     step = prompt_key(automatic, step, GITTUF_STEPS, "Add policy key to gittuf root of trust")
     cmd = (
         "gittuf trust add-policy-key"
-        " -k ../keys/root"
-        " --policy-key ../keys/targets.pub"
+        f" -k {root_private_key_path}"
+        f" --policy-key {targets_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
 
     step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize policy")
-    cmd = "gittuf policy init -k ../keys/targets"
+    cmd = f"gittuf policy init -k {targets_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
     step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the main branch")
     cmd = (
         "gittuf policy add-rule"
-        " -k ../keys/targets"
+        f" -k {targets_private_key_path}"
         " --rule-name 'protect-main'"
         " --rule-pattern git:refs/heads/main"
-        " --authorize-key ../keys/developer1.pub"
+        f" --authorize-key {dev1_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -142,10 +146,10 @@ def experiment4(automatic, repository_directory):
     step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the feature branch")
     cmd = (
         "gittuf policy add-rule"
-        " -k ../keys/targets"
+        f" -k {targets_private_key_path}"
         " --rule-name 'protect-feature'"
         " --rule-pattern git:refs/heads/feature"
-        " --authorize-key ../keys/developer2.pub"
+        f" --authorize-key {dev2_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -162,13 +166,13 @@ def experiment4(automatic, repository_directory):
     run_command(cmd, 0)
 
     # RSL Manipulation
-    print("\n[3 / 3] Write Rule Violations ----------------------------------------------")
+    print_section("[3 / 3] Write Rule Violations")
 
     step = 1
 
     step = prompt_key(automatic, step, DEMO_STEPS, "Make authorized change to repo's main branch")
     display_command("echo 'Hello, world!' > README.md")
-    with open("README.md", "w") as fp:
+    with open("README.md", "w", encoding="utf-8") as fp:
         fp.write("Hello, world!\n")
     cmd = "git add README.md"
     display_command(cmd)
@@ -186,7 +190,7 @@ def experiment4(automatic, repository_directory):
     run_command(cmd, 0)
 
     step = prompt_key(automatic, step, DEMO_STEPS, "Update repo config to use unauthorized key")
-    cmd = "git config --local user.signingkey ../keys/unauthorized"
+    cmd = f"git config --local user.signingkey {unauthorized_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -211,12 +215,17 @@ def experiment4(automatic, repository_directory):
     display_command(cmd)
     os.chdir("../repo_a")
     display_command("echo 'Evil change!' > README.md")
-    with open("README.md", "w") as fp:
+    with open("README.md", "w", encoding="utf-8") as fp:
         fp.write("Evil change!\n")
     cmd = "git add README.md"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git commit -m 'Totally not an evil change'"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Record change to main in RSL")
+    cmd = "gittuf rsl record main"
     display_command(cmd)
     run_command(cmd, 0)
 
