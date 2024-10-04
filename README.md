@@ -8,7 +8,6 @@ as presented in the paper "Rethinking Trust in Forge-Based Git Security".
 Before building and evaluating gittuf, you will need to install a few packages:
 
 - A recent version of Python 3
-  - [The `click` library](https://pypi.org/project/click/)
 - [Git, 2.43 or greater](https://git-scm.com/downloads)
 - GNU `make`
 - [The Go toolchain, 1.22 or greater](https://go.dev/doc/install)
@@ -20,16 +19,32 @@ updates to your PATH need to take effect before building gittuf will succeed.
 
 ## Building gittuf
 
-Once all prerequisites are installed, download the source code for gittuf,
-available [here](https://github.com/gittuf/gittuf). Use the `main` branch.
-Cloning using Git is preferred, but downloading the ZIP archive will work as
-well.
+### Install Latest Version Using Go
 
-**To clone both repositories, run:**
+Once Go 1.22 or higher is installed and your PATH is configured to include
+$GOBIN, you can install gittuf using `go install`.
+
+**Run:**
+
+```sh
+go install github.com/gittuf/gittuf@latest
+```
+
+This will fetch the latest release of gittuf and place the binary in your
+$GOBIN. It is important to ensure that this binary is in your PATH for the
+experiments!
+
+### Build from Source
+
+Alternatively, you can build from gittuf from source. First, download the source
+code for gittuf, available [here](https://github.com/gittuf/gittuf). Use the
+`main` branch or the latest tagged release. Cloning using Git is preferred, but
+downloading the ZIP archive will work as well.
+
+**To clone, run:**
 
 ```sh
 git clone https://github.com/gittuf/gittuf
-git clone https://github.com/adityasaky/ndss-eval
 ```
 
 Open a terminal inside the downloaded repository directory and run the `make`
@@ -41,10 +56,24 @@ platform.
 
 ```sh
 cd gittuf
-make
+make just-install
 ```
 
 ## Running Evaluations
+
+Clone this repository to get the experiment scripts.
+
+**Run:**
+
+```sh
+git clone https://github.com/adityasaky/gittuf-ndss-eval
+```
+
+Ensure that Python 3 is installed. This README assumes that it's available as
+`python3` in your PATH, though this may vary based on your operating system.
+Also install the evaluation script dependencies via the provided
+`requirements.txt` file. This can be using `pip` in a virtual environment or
+your system package manager.
 
 Each experiment is contained in its respective Python file. To run an
 experiment, simply pass it to Python, e.g. `python3 experiment1.py`. The script
