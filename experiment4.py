@@ -251,7 +251,7 @@ def experiment4(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 1)
 
-    print("... but is warned that something has happened.")
+    print("\n... but is warned by gittuf that there's a policy violation!")
 
 if __name__ == "__main__":
     check_binaries(REQUIRED_BINARIES)

@@ -1,7 +1,7 @@
 # Artifact Evaluation for gittuf - NDSS 2025
 
 This repository contains the scripts and documentation needed to evaluate gittuf
-as presented in the paper.
+as presented in the paper "Rethinking Trust in Forge-Based Git Security".
 
 ## Prerequisites
 
@@ -26,9 +26,10 @@ Cloning using Git is preferred, but downloading the ZIP archive will work as
 well.
 
 **To clone both repositories, run:**
+
 ```sh
 git clone https://github.com/gittuf/gittuf
-git clone https://github.com/gittuf/ndss-eval
+git clone https://github.com/adityasaky/ndss-eval
 ```
 
 Open a terminal inside the downloaded repository directory and run the `make`
@@ -37,6 +38,7 @@ system, but are important for ensuring the proper functioning of gittuf on your
 platform.
 
 **To build gittuf, run:**
+
 ```sh
 cd gittuf
 make
@@ -80,7 +82,9 @@ editing a policy that was configured to require two developers to sign off.
 First, a repository owner (with key `root`) creates a gittuf-enabled repository
 and delegates trust in the policy to two developers (with keys `developer1` and
 `developer2`, respectively). To prevent a single developer from making changes
-themselves, the threshold for policy metadata signatures is set to two.
+themselves, the threshold for policy metadata signatures is set to two. That is,
+both developers need to authorize changes to the policy by signing the rule
+file.
 
 Developer 1 and 2 initialize and set a rule to protect the main branch in the
 policy, with both developers signing off on the change.
@@ -89,23 +93,30 @@ Developer 1 then attempts to add another rule without developer 2's agreement,
 which causes verification to fail.
 
 **To run the experiment, run:**
+
 ```sh
 python3 experiment1.py
 ```
 
 ### Experiment 2 - Delegations
 
-This epxeriment simulates utilization of gittuf's delegations feature.
+This eexperiment simulates utilization of gittuf's granular delegations feature
+that allows for distributing policy declaration responsibilities amongst
+multiple developers without overprivileging them.
 
 First, a repository owner defines a policy and delegates authority to make
-changes to the `main` branch to developer 1. Developer 1 then (without
-authorization) delegates access to the `feature` branch to developer 2.
-Developer 2 then makes a change to the `feature` branch.
+changes to the `main` branch to developer 1 and the `feature` branch to
+developer 2. Developer 1 then delegates trust to developer 3 for the `feature`
+branch, _despite developer 1 not being trusted for that branch_.
 
-When the developer attempts to verify the changes made to policy and branches,
-gittuf alerts them to the unathorized changes.
+When developer 3 attempts to verify their change to the `feature` branch, gittuf
+alerts them that they are not trusted for the branch. In summary, this
+highlights that gittuf's delegations can be used to enable developers to extend
+the policy in limited ways: developer 1 is trusted to delegate trust only in the
+`main` branch.
 
 **To run the experiment, run:**
+
 ```sh
 python3 experiment2.py
 ```
@@ -117,15 +128,16 @@ Log (RSL) propagates across repository copies.
 
 First, a repository owner creates a gittuf-enabled repository and makes a
 commit. User A then clones the repository and makes a change (authorized by the
-policy), and then pushes their changes. The upstream repository owner drops
-these changes.
+policy), and then pushes their changes. The upstream repository maliciously
+drops these changes.
 
 User B then clones the repository, unaware as to what has happened. The user
 makes a commit and pushes it to the remote repository. User A then attempts to
-pull the latest changes, but is warned that their branch has diverged from what
-is on the remote repository.
+pull the latest changes, but is warned that their RSL has diverged from what
+is on the remote repository, alerting them of the server's misbehavior.
 
 **To run the experiment, run:**
+
 ```sh
 python3 experiment3.py
 ```
@@ -146,6 +158,7 @@ verify the changes, but gittuf raises an alert that an unauthorized signature is
 on a commit (against the policy).
 
 **To run the experiment, run:**
+
 ```sh
 python3 experiment4.py
 ```

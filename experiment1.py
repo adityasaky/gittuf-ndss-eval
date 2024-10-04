@@ -206,7 +206,7 @@ def experiment1(automatic, repository_directory):
         "gittuf policy add-rule"
         f" -k ../keys/developer1"
         " --rule-name 'protect-feature'"
-        " --rule-pattern git:refs/heads/main"
+        " --rule-pattern git:refs/heads/feature"
         f" --authorize-key {authorized_public_key_path}"
     )
     display_command(cmd)
@@ -214,12 +214,12 @@ def experiment1(automatic, repository_directory):
 
     # Attempt to apply the new policy
     step = prompt_key(automatic, step, DEMO_STEPS,
-    "Developer 1 attempts to apply the policy...")
-    cmd = "gittuf --verbose policy apply"
+    "Developer 1 attempts to apply the policy without developer 2's approval...")
+    cmd = "gittuf policy apply"
     display_command(cmd)
     run_command(cmd, 1)
 
-    print("...but is unable to due to both developers needing to approve.")
+    print("\n...but is blocked by gittuf policy semantics!")
 
 
 if __name__ == "__main__":

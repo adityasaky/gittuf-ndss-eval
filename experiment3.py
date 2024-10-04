@@ -196,7 +196,7 @@ def experiment3(automatic, repository_directory):
 
     # Setup git configuration for developer 1
     step = prompt_key(automatic, step, DEMO_STEPS,
-    "Set repo config to use dev1 identity and test key")
+    "Set repo config to use developer 1 identity and test key")
     cmd = "git config --local gpg.format ssh"
     display_command(cmd)
     run_command(cmd, 0)
@@ -274,7 +274,7 @@ def experiment3(automatic, repository_directory):
 
     # Setup Git configuration for developer 2
     step = prompt_key(automatic, step, DEMO_STEPS,
-    "Set repo config to use dev2 identity and test key")
+    "Set repo config to use developer 2 identity and test key")
     cmd = "git config --local gpg.format ssh"
     display_command(cmd)
     run_command(cmd, 0)
@@ -328,11 +328,11 @@ def experiment3(automatic, repository_directory):
     cmd = f"cd {tmp_repo_a_dir}"
     display_command(cmd)
     os.chdir(tmp_repo_a_dir)
-    cmd = "git pull"
+    cmd = "gittuf rsl remote pull origin"
     display_command(cmd)
-    run_command(cmd, 128)
+    run_command(cmd, 1)
 
-    print("... but is warned that something has happened.")
+    print("\n... but is warned by gittuf that the RSL has diverged!")
 
 if __name__ == "__main__":
     check_binaries(REQUIRED_BINARIES)

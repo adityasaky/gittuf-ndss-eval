@@ -69,6 +69,7 @@ def experiment2(automatic, repository_directory):
     targets_private_key_path = os.path.join(tmp_keys_dir, "targets")
     dev1_private_key_path = os.path.join(tmp_keys_dir, "developer1")
     dev2_private_key_path = os.path.join(tmp_keys_dir, "developer2")
+    dev3_private_key_path = os.path.join(tmp_keys_dir, "developer3")
 
     targets_public_key_path = os.path.join(tmp_keys_dir, "targets.pub")
     dev1_public_key_path = os.path.join(tmp_keys_dir, "developer1.pub")
@@ -145,14 +146,14 @@ def experiment2(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Add a rule authorizing developer 3 to modify the feature branch
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the feature branch")
+    # Add a rule authorizing developer 2 to modify the feature branch
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the feature branch granting trust to developer 2")
     cmd = (
         "gittuf policy add-rule"
         f" -k {targets_private_key_path}"
         " --rule-name 'protect-feature'"
         " --rule-pattern git:refs/heads/feature"
-        f" --authorize-key {dev3_public_key_path}"
+        f" --authorize-key {dev2_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -164,14 +165,14 @@ def experiment2(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the feature branch")
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule in the delegated rule file granting trust to developer 3 for the feature branch")
     cmd = (
         "gittuf policy add-rule"
         " --policy-name protect-main"
         f" -k {dev1_private_key_path}"
         " --rule-name 'protect-feature-delegated'"
         " --rule-pattern git:refs/heads/feature"
-        f" --authorize-key {dev2_public_key_path}"
+        f" --authorize-key {dev3_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -192,16 +193,16 @@ def experiment2(automatic, repository_directory):
 
     step = 1
 
-    # Set the git configuration to sign as Developer 2
+    # Set the git configuration to sign as Developer 3
     step = prompt_key(automatic, step, DEMO_STEPS,
-    "Set repo config to use dev2 identity and test key")
+    "Set repo config to use developer 3's identity and test key")
     cmd = "git config --local gpg.format ssh"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local commit.gpgsign true"
     display_command(cmd)
     run_command(cmd, 0)
-    cmd = f"git config --local user.signingkey {dev2_private_key_path}"
+    cmd = f"git config --local user.signingkey {dev3_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local user.name gittuf-demo"
@@ -211,7 +212,7 @@ def experiment2(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Make a commit as Developer 2 to the feature branch
+    # Make a commit as Developer 3 to the feature branch
     step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's feature branch")
     cmd = "git checkout -b feature"
     display_command(cmd)
@@ -232,12 +233,12 @@ def experiment2(automatic, repository_directory):
     run_command(cmd, 0)
 
     # Finally, verify the policy to find that the delegation was unauthorized
-    step = prompt_key(automatic, step, DEMO_STEPS, "Developer 2 attempts to verify the policy...")
+    step = prompt_key(automatic, step, DEMO_STEPS, "Developer 3 attempts to verify the policy...")
     cmd = "gittuf --verbose verify-ref feature"
     display_command(cmd)
     run_command(cmd, 1)
 
-    print("...and finds out that they're not authorized to write to the branch.")
+    print("\n...and finds out that developer 2 was not allowed in gittuf policy to grant them permissions for the feature branch!")
 
 
 if __name__ == "__main__":
