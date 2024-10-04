@@ -140,7 +140,7 @@ def experiment2(automatic, repository_directory):
         " -k ../keys/targets"
         " --rule-name 'delegated-policy-1'"
         " --rule-pattern git:refs/heads/main"
-        f" --authorize-key {dev1_key_path_policy}"
+        f" --authorize-key {dev1_pubkey_path_policy}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -148,7 +148,7 @@ def experiment2(automatic, repository_directory):
     # Add a policy file for the delegated policy above
     step = prompt_key(automatic, step, GITTUF_STEPS,
     "Create a delegated policy from the previous rule")
-    cmd = f"gittuf policy init -k {dev1_key_path_policy} --policy-name delegated-policy-1"
+    cmd = f"gittuf policy init -k {dev1_privkey_path_policy} --policy-name delegated-policy-1"
     display_command(cmd)
     run_command(cmd, 0)
 
