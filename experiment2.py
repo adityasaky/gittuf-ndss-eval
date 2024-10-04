@@ -65,15 +65,17 @@ def experiment2(automatic, repository_directory):
         os.chmod(os.path.join(tmp_keys_dir, key), 0o600)
 
     # Compute folder paths
-    authorized_key_path_git = os.path.join(tmp_keys_dir, "authorized.pub")
-    dev1_key_path_git = os.path.join(tmp_keys_dir, "developer1")
-    dev2_key_path_git = os.path.join(tmp_keys_dir, "developer2")
+    root_private_key_path = os.path.join(tmp_keys_dir, "root")
+    authorized_private_key_path = os.path.join(tmp_keys_dir, "authorized")
+    targets_private_key_path = os.path.join(tmp_keys_dir, "targets")
+    dev1_private_key_path = os.path.join(tmp_keys_dir, "developer1")
+    dev2_private_key_path = os.path.join(tmp_keys_dir, "developer2")
+    dev3_private_key_path = os.path.join(tmp_keys_dir, "developer3")
 
-    targets_pubkey_path_policy = os.path.join(tmp_keys_dir, "targets.pub")
-    targets_privkey_path_policy = os.path.join(tmp_keys_dir, "targets.pub")
-    dev1_pubkey_path_policy = os.path.join(tmp_keys_dir, "developer1.pub")
-    dev1_privkey_path_policy = os.path.join(tmp_keys_dir, "developer1")
-    dev2_key_path_policy = os.path.join(tmp_keys_dir, "developer2.pub")
+    targets_public_key_path = os.path.join(tmp_keys_dir, "targets")
+    dev1_public_key_path = os.path.join(tmp_keys_dir, "developer1.pub")
+    dev2_public_key_path = os.path.join(tmp_keys_dir, "developer2.pub")
+    dev3_public_key_path = os.path.join(tmp_keys_dir, "developer3.pub")
 
     # Initialize the Git repository in the chosen directory
     step = prompt_key(automatic, step, REPOSITORY_STEPS, "Initialize Git repository")
@@ -92,7 +94,7 @@ def experiment2(automatic, repository_directory):
     cmd = "git config --local commit.gpgsign true"
     display_command(cmd)
     run_command(cmd, 0)
-    cmd = f"git config --local user.signingkey {authorized_key_path_git}"
+    cmd = f"git config --local user.signingkey {authorized_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local user.name gittuf-demo"
@@ -122,14 +124,14 @@ def experiment2(automatic, repository_directory):
     cmd = (
         "gittuf trust add-policy-key"
         " -k ../keys/root"
-        f" --policy-key {targets_pubkey_path_policy}"
+        f" --policy-key {targets_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
 
     # Initialize the policy
     step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize policy")
-    cmd = f"gittuf policy init -k {targets_privkey_path_policy}"
+    cmd = f"gittuf policy init -k {targets_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -137,28 +139,41 @@ def experiment2(automatic, repository_directory):
     step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the main branch")
     cmd = (
         "gittuf policy add-rule"
-        " -k ../keys/targets"
-        " --rule-name 'delegated-policy-1'"
+        f" -k {targets_private_key_path}"
+        " --rule-name 'protect-main'"
         " --rule-pattern git:refs/heads/main"
-        f" --authorize-key {dev1_pubkey_path_policy}"
+        f" --authorize-key {dev1_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Add a policy file for the delegated policy above
+    # Add a rule authorizing developer 3 to modify the feature branch
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the feature branch")
+    cmd = (
+        "gittuf policy add-rule"
+        f" -k {targets_private_key_path}"
+        " --rule-name 'protect-feature'"
+        " --rule-pattern git:refs/heads/feature"
+        f" --authorize-key {dev3_public_key_path}"
+    )
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    # Add a policy file for the main branch
     step = prompt_key(automatic, step, GITTUF_STEPS,
-    "Create a delegated policy from the previous rule")
-    cmd = f"gittuf policy init -k {dev1_privkey_path_policy} --policy-name delegated-policy-1"
+    "Create a delegated policy from the protect-main rule")
+    cmd = f"gittuf policy init -k {dev1_private_key_path} --policy-name protect-main"
     display_command(cmd)
     run_command(cmd, 0)
 
     step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the feature branch")
     cmd = (
         "gittuf policy add-rule"
-        " -k ../keys/targets"
-        " --rule-name 'protect-feature'"
+        " --policy-name protect-main"
+        f" -k {dev1_private_key_path}"
+        " --rule-name 'protect-feature-delegated'"
         " --rule-pattern git:refs/heads/feature"
-        f" --authorize-key {dev2_key_path_policy}"
+        f" --authorize-key {dev2_public_key_path}"
     )
     display_command(cmd)
     run_command(cmd, 0)
@@ -187,7 +202,7 @@ def experiment2(automatic, repository_directory):
     cmd = "git config --local commit.gpgsign true"
     display_command(cmd)
     run_command(cmd, 0)
-    cmd = f"git config --local user.signingkey {dev2_key_path_git}"
+    cmd = f"git config --local user.signingkey {dev2_private_key_path}"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local user.name gittuf-demo"
