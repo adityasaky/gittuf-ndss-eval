@@ -36,6 +36,10 @@ key to advance to the next step.
 Each command is checked for proper functioning and return code. In the case of
 an error, the script will print out the issue and abort.
 
+Note that the Python scripts should not be moved from where they are, as they
+depend on accessing the keys contained in the `keys` folder. You can however
+select a custom location for where the script should 
+
 ### Customization
 
 Each script file supports the same options as follows:
@@ -52,7 +56,7 @@ Each script file supports the same options as follows:
 
 ### Experiment 1 - Unilateral Policy Modification
 
-This experiment simulates a scenario where a single developer is blocked from
+This experiment simulates a scenario where a single developer is prevented from
 editing a policy that was configured to require two developers to sign off.
 
 First, a repository owner (with key `root`) creates a gittuf-enabled repository
@@ -66,16 +70,17 @@ policy, with both developers signing off on the change.
 Developer 1 then attempts to add another rule without developer 2's agreement,
 which causes verification to fail.
 
-### Experiment 2
+### Experiment 2 - Delegations
 
 This epxeriment simulates utilization of gittuf's delegations feature.
 
 First, a repository owner defines a policy and delegates authority to make
-changes to the `main` branch to developer 1. Developer 1 then attempts to
-delegate access to the `feature` branch to developer 2.
+changes to the `main` branch to developer 1. Developer 1 then (without
+authorization) delegates access to the `feature` branch to developer 2.
+Developer 2 then makes a change to the `feature` branch.
 
-When the repository owner attempts to verify the changes made to policy and
-branches, gittuf alerts them to the unathorized changes.
+When the developer attempts to verify the changes made to policy and branches,
+gittuf alerts them to the unathorized changes.
 
 ### Experiment 3 - RSL Divergence
 

@@ -69,8 +69,10 @@ def experiment2(automatic, repository_directory):
     dev1_key_path_git = os.path.join(tmp_keys_dir, "developer1")
     dev2_key_path_git = os.path.join(tmp_keys_dir, "developer2")
 
-    authorized_key_path_policy = os.path.join(tmp_keys_dir, "authorized.pub")
-    dev1_key_path_policy = os.path.join(tmp_keys_dir, "developer1.pub")
+    targets_pubkey_path_policy = os.path.join(tmp_keys_dir, "targets.pub")
+    targets_privkey_path_policy = os.path.join(tmp_keys_dir, "targets.pub")
+    dev1_pubkey_path_policy = os.path.join(tmp_keys_dir, "developer1.pub")
+    dev1_privkey_path_policy = os.path.join(tmp_keys_dir, "developer1")
     dev2_key_path_policy = os.path.join(tmp_keys_dir, "developer2.pub")
 
     # Initialize the Git repository in the chosen directory
@@ -109,25 +111,29 @@ def experiment2(automatic, repository_directory):
 
     step = 1
 
+    # Initialize gittuf's root of trust
     step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize gittuf root of trust")
     cmd = "gittuf trust init -k ../keys/root"
     display_command(cmd)
     run_command(cmd, 0)
 
+    # Add developer 1's key as trusted for policy
     step = prompt_key(automatic, step, GITTUF_STEPS, "Add policy key to gittuf root of trust")
     cmd = (
         "gittuf trust add-policy-key"
         " -k ../keys/root"
-        " --policy-key ../keys/targets.pub"
+        f" --policy-key {targets_pubkey_path_policy}"
     )
     display_command(cmd)
     run_command(cmd, 0)
 
+    # Initialize the policy
     step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize policy")
-    cmd = "gittuf policy init -k ../keys/targets"
+    cmd = f"gittuf policy init -k {targets_privkey_path_policy}"
     display_command(cmd)
     run_command(cmd, 0)
 
+    # Add a rule authorizing developer 1 to modify the main branch
     step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the main branch")
     cmd = (
         "gittuf policy add-rule"
@@ -139,8 +145,10 @@ def experiment2(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Create a delegated policy from the previous rule")
-    cmd = "gittuf policy init -k ../keys/developer1 --policy-name delegated-policy-1"
+    # Add a policy file for the delegated policy above
+    step = prompt_key(automatic, step, GITTUF_STEPS,
+    "Create a delegated policy from the previous rule")
+    cmd = f"gittuf policy init -k {dev1_key_path_policy} --policy-name delegated-policy-1"
     display_command(cmd)
     run_command(cmd, 0)
 
@@ -172,14 +180,14 @@ def experiment2(automatic, repository_directory):
     step = 1
 
     step = prompt_key(automatic, step, DEMO_STEPS,
-    "Set repo config to use dev1 identity and test key")
+    "Set repo config to use dev2 identity and test key")
     cmd = "git config --local gpg.format ssh"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local commit.gpgsign true"
     display_command(cmd)
     run_command(cmd, 0)
-    cmd = f"git config --local user.signingkey {dev1_key_path_git}"
+    cmd = f"git config --local user.signingkey {dev2_key_path_git}"
     display_command(cmd)
     run_command(cmd, 0)
     cmd = "git config --local user.name gittuf-demo"
