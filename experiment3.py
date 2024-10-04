@@ -24,10 +24,12 @@ DEMO_STEPS = 14
 
 @click.command()
 @click.option(
-    "--automatic", default=False, type=bool, help="Whether to wait for input before each command is run."
+    "--automatic", default=False, type=bool,
+    help="Whether to wait for input before each command is run."
 )
 @click.option(
-    "--repository-directory", default="repo", help="The path where the script should store the working copy of the repository."
+    "--repository-directory", default="",
+    help="The path where the script should store the working copy of the repository."
 )
 def experiment3(automatic, repository_directory):
     """Experiment 3 for NDSS Artifact Evaluation"""
@@ -44,13 +46,17 @@ def experiment3(automatic, repository_directory):
     keys_dir = "keys"
 
     # Select folder for the working repository copy
-    tmp_dir = tempfile.TemporaryDirectory()
-    tmp_keys_dir = os.path.join(tmp_dir.name, keys_dir)
+    working_dir = repository_directory
+    if working_dir == "":
+        tmp_dir =  tempfile.TemporaryDirectory()
+        working_dir = tmp_dir.name
+
+    tmp_keys_dir = os.path.join(working_dir, keys_dir)
 
     # "repo_server" is the remote repo for "repo_a" and "repo_b"
-    tmp_repo_server_dir = os.path.join(tmp_dir.name, "repo_server")
-    tmp_repo_a_dir = os.path.join(tmp_dir.name, "repo_a")
-    tmp_repo_b_dir = os.path.join(tmp_dir.name, "repo_b")
+    tmp_repo_server_dir = os.path.join(working_dir, "repo_server")
+    tmp_repo_a_dir = os.path.join(working_dir, "repo_a")
+    tmp_repo_b_dir = os.path.join(working_dir, "repo_b")
 
     shutil.copytree(os.path.join(current_dir, keys_dir), tmp_keys_dir)
     os.mkdir(tmp_repo_server_dir)
@@ -78,7 +84,8 @@ def experiment3(automatic, repository_directory):
     # Set the configuration options needed to sign commits. For this demo, the
     # "authorized" key is used, but note that this is not the key used for
     # managing the policy.
-    step = prompt_key(automatic, step, REPOSITORY_STEPS, "Set repo config to use demo identity and test key")
+    step = prompt_key(automatic, step, REPOSITORY_STEPS,
+    "Set repo config to use demo identity and test key")
     cmd = "git config --local gpg.format ssh"
     display_command(cmd)
     run_command(cmd, 0)
@@ -152,7 +159,7 @@ def experiment3(automatic, repository_directory):
 
     step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's main branch")
     display_command("echo 'Hello, world!' > README.md")
-    with open("README.md", "w") as fp:
+    with open("README.md", "w", encoding="utf-8") as fp:
         fp.write("Hello, world!\n")
     cmd = "git add README.md"
     display_command(cmd)
@@ -165,9 +172,9 @@ def experiment3(automatic, repository_directory):
     run_command(cmd, 0)
 
     step = prompt_key(automatic, step, DEMO_STEPS, "User A clones the git repository")
-    cmd = f"cd {tmp_dir.name}"
+    cmd = f"cd {working_dir}"
     display_command(cmd)
-    os.chdir(tmp_dir.name)
+    os.chdir(working_dir)
     cmd = f"gittuf clone {tmp_repo_server_dir} repo_a"
     display_command(cmd)
     run_command(cmd, 0)
@@ -175,7 +182,8 @@ def experiment3(automatic, repository_directory):
     display_command(cmd)
     os.chdir(tmp_repo_a_dir)
 
-    step = prompt_key(automatic, step, DEMO_STEPS, "Set repo config to use dev1 identity and test key")
+    step = prompt_key(automatic, step, DEMO_STEPS,
+    "Set repo config to use dev1 identity and test key")
     cmd = "git config --local gpg.format ssh"
     display_command(cmd)
     run_command(cmd, 0)
@@ -194,7 +202,7 @@ def experiment3(automatic, repository_directory):
 
     step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's main branch")
     display_command("echo 'Hello, new world!' > README.md")
-    with open("README.md", "w") as fp:
+    with open("README.md", "w", encoding="utf-8") as fp:
         fp.write("Hello, new world!\n")
     cmd = "git add README.md"
     display_command(cmd)
@@ -236,9 +244,9 @@ def experiment3(automatic, repository_directory):
     run_command(cmd, 0)
 
     step = prompt_key(automatic, step, DEMO_STEPS, "User B clones the git repository")
-    cmd = f"cd {tmp_dir.name}"
+    cmd = f"cd {working_dir}"
     display_command(cmd)
-    os.chdir(tmp_dir.name)
+    os.chdir(working_dir)
     cmd = f"gittuf clone {tmp_repo_server_dir} repo_b"
     display_command(cmd)
     run_command(cmd, 0)
@@ -247,7 +255,8 @@ def experiment3(automatic, repository_directory):
     display_command(cmd)
     os.chdir(tmp_repo_b_dir)
 
-    step = prompt_key(automatic, step, DEMO_STEPS, "Set repo config to use dev2 identity and test key")
+    step = prompt_key(automatic, step, DEMO_STEPS,
+    "Set repo config to use dev2 identity and test key")
     cmd = "git config --local gpg.format ssh"
     display_command(cmd)
     run_command(cmd, 0)
@@ -266,7 +275,7 @@ def experiment3(automatic, repository_directory):
 
     step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's main branch")
     display_command("echo 'Hello, newer world!' > README.md")
-    with open("README.md", "w") as fp:
+    with open("README.md", "w", encoding="utf-8") as fp:
         fp.write("Hello, newer world!\n")
     cmd = "git add README.md"
     display_command(cmd)

@@ -68,7 +68,14 @@ which causes verification to fail.
 
 ### Experiment 2
 
-In progress.
+This epxeriment simulates utilization of gittuf's delegations feature.
+
+First, a repository owner defines a policy and delegates authority to make
+changes to the `main` branch to developer 1. Developer 1 then attempts to
+delegate access to the `feature` branch to developer 2.
+
+When the repository owner attempts to verify the changes made to policy and
+branches, gittuf alerts them to the unathorized changes.
 
 ### Experiment 3 - RSL Divergence
 

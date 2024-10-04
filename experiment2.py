@@ -2,15 +2,17 @@
 
 ################################################################################
 #
-#        experiment1.py - The gittuf NDSS Artifact Evaluation Demo, pt. 1
+#        experiment2.py - The gittuf NDSS Artifact Evaluation Demo, pt. 2
 #
 #  This script creates a repository and runs various tests on it, demonstrating
 #              gittuf's ability to meet our claims in the paper.
 #
 ################################################################################
 
-import os
 import shutil
+import os
+import shlex
+import subprocess
 import tempfile
 import click
 
@@ -19,8 +21,8 @@ from utils import prompt_key, display_command, run_command, check_binaries
 REQUIRED_BINARIES = ["git", "gittuf", "ssh-keygen"]
 
 REPOSITORY_STEPS = 3
-GITTUF_STEPS = 10
-DEMO_STEPS = 2
+GITTUF_STEPS = 8
+DEMO_STEPS = 4
 
 @click.command()
 @click.option(
@@ -31,12 +33,12 @@ DEMO_STEPS = 2
     "--repository-directory", default="",
     help="The path where the script should store the working copy of the repository."
 )
-def experiment1(automatic, repository_directory):
-    """Experiment 1 for NDSS Artifact Evaluation"""
+def experiment2(automatic, repository_directory):
+    """Experiment 2 for NDSS Artifact Evaluation"""
 
-    print("gittuf NDSS Artifact Evaluation - Experiment 1")
+    print("gittuf NDSS Artifact Evaluation - Experiment 2")
 
-    # Repository Setup
+ # Repository Setup
     print("[1 / 3] Repository Setup ------------------------------------------")
 
     step = 1
@@ -64,8 +66,12 @@ def experiment1(automatic, repository_directory):
 
     # Compute folder paths
     authorized_key_path_git = os.path.join(tmp_keys_dir, "authorized.pub")
+    dev1_key_path_git = os.path.join(tmp_keys_dir, "developer1")
+    dev2_key_path_git = os.path.join(tmp_keys_dir, "developer2")
 
     authorized_key_path_policy = os.path.join(tmp_keys_dir, "authorized.pub")
+    dev1_key_path_policy = os.path.join(tmp_keys_dir, "developer1.pub")
+    dev2_key_path_policy = os.path.join(tmp_keys_dir, "developer2.pub")
 
     # Initialize the Git repository in the chosen directory
     step = prompt_key(automatic, step, REPOSITORY_STEPS, "Initialize Git repository")
@@ -76,7 +82,8 @@ def experiment1(automatic, repository_directory):
     # Set the configuration options needed to sign commits. For this demo, the
     # "authorized" key is used, but note that this is not the key used for
     # managing the policy.
-    step = prompt_key(automatic, step, REPOSITORY_STEPS, "Set repo config to use demo identity and test key")
+    step = prompt_key(automatic, step, REPOSITORY_STEPS,
+    "Set repo config to use demo identity and test key")
     cmd = "git config --local gpg.format ssh"
     display_command(cmd)
     run_command(cmd, 0)
@@ -102,71 +109,52 @@ def experiment1(automatic, repository_directory):
 
     step = 1
 
-    # Initialize gittuf's root of trust
     step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize gittuf root of trust")
     cmd = "gittuf trust init -k ../keys/root"
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Add developer 1's key as trusted for policy
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Trust developer 1's key for the policy")
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Add policy key to gittuf root of trust")
     cmd = (
         "gittuf trust add-policy-key"
         " -k ../keys/root"
-        " --policy-key ../keys/developer1.pub"
+        " --policy-key ../keys/targets.pub"
     )
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Add developer 2's key as trusted for policy
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Trust developer 2's key for the policy")
-    cmd = (
-        "gittuf trust add-policy-key"
-        " -k ../keys/root"
-        " --policy-key ../keys/developer2.pub"
-    )
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize policy")
+    cmd = "gittuf policy init -k ../keys/targets"
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Set the threshold for policy changes to be 2 (in this case, both
-    # developers)
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Set policy threshold to 2 signatures")
-    cmd = ("gittuf trust update-policy-threshold -k ../keys/root --threshold 2")
-    display_command(cmd)
-    run_command(cmd, 0)
-
-    # Initialize the policy (by using developer 1's key)
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Initialize policy with developer 1's key")
-    cmd = "gittuf policy init -k ../keys/developer1"
-    display_command(cmd)
-    run_command(cmd, 0)
-
-    # Sign the policy with developer 2's key
-    # We must do this since we cannot sign a commit with two keys
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Sign policy with developer 2's key")
-    cmd = "gittuf policy sign -k ../keys/developer2"
-    display_command(cmd)
-    run_command(cmd, 0)
-
-    # Add a rule to protect the main branch (using developer 1's key)
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Developer 1 adds rule to protect the main branch")
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the main branch")
     cmd = (
         "gittuf policy add-rule"
-        " -k ../keys/developer1"
-        " --rule-name 'protect-main'"
+        " -k ../keys/targets"
+        " --rule-name 'delegated-policy-1'"
         " --rule-pattern git:refs/heads/main"
-        f" --authorize-key {authorized_key_path_policy}"
+        f" --authorize-key {dev1_key_path_policy}"
     )
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Developer 2 approves and signs the policy
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Sign policy with developer 2's key")
-    cmd = "gittuf policy sign -k ../keys/developer2"
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Create a delegated policy from the previous rule")
+    cmd = "gittuf policy init -k ../keys/developer1 --policy-name delegated-policy-1"
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Make the policy live
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the feature branch")
+    cmd = (
+        "gittuf policy add-rule"
+        " -k ../keys/targets"
+        " --rule-name 'protect-feature'"
+        " --rule-pattern git:refs/heads/feature"
+        f" --authorize-key {dev2_key_path_policy}"
+    )
+    display_command(cmd)
+    run_command(cmd, 0)
+
     step = prompt_key(automatic, step, GITTUF_STEPS, "Apply the policy")
     cmd = "gittuf policy apply"
     display_command(cmd)
@@ -178,32 +166,56 @@ def experiment1(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Policy demonstration
-    print("\n[3 / 3] gittuf Verification ----------------------------------------------")
+    # RSL Manipulation
+    print("\n[3 / 3] Delegation Violation ----------------------------------------------")
 
     step = 1
 
-    # Now, simulate a rouge rule add by developer 1
-    step = prompt_key(automatic, step, DEMO_STEPS, "Developer 1 adds rule to protect the feature branch")
-    cmd = (
-        "gittuf policy add-rule"
-        " -k ../keys/developer1"
-        " --rule-name 'protect-feature'"
-        " --rule-pattern git:refs/heads/main"
-        f" --authorize-key {authorized_key_path_policy}"
-    )
+    step = prompt_key(automatic, step, DEMO_STEPS,
+    "Set repo config to use dev1 identity and test key")
+    cmd = "git config --local gpg.format ssh"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local commit.gpgsign true"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = f"git config --local user.signingkey {dev1_key_path_git}"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local user.name gittuf-demo"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local user.email gittuf.demo@example.com"
     display_command(cmd)
     run_command(cmd, 0)
 
-    # Attempt to apply the new policy
-    step = prompt_key(automatic, step, DEMO_STEPS, "Developer 1 attempts to apply the policy...")
-    cmd = "gittuf --verbose policy apply"
+    step = prompt_key(automatic, step, DEMO_STEPS, "Make change to repo's feature branch")
+    cmd = "git checkout -b feature"
+    display_command(cmd)
+    run_command(cmd, 0)
+    display_command("echo 'Hello, new world!' > README.md")
+    with open("README.md", "w", encoding="utf-8") as fp:
+        fp.write("Hello, new world!\n")
+    cmd = "git add README.md"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git commit -m 'Another commit'"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Record change to feature in RSL")
+    cmd = "gittuf rsl record feature"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, DEMO_STEPS, "Developer 2 attempts to verify the policy...")
+    cmd = "gittuf --verbose verify-ref feature"
     display_command(cmd)
     run_command(cmd, 1)
 
-    print("...but is unable to due to both developers needing to approve.")
+    print("...and finds out that they're not authorized to write to the branch.")
 
 
 if __name__ == "__main__":
     check_binaries(REQUIRED_BINARIES)
-    experiment1() # pylint: disable=no-value-for-parameter
+    experiment2() # pylint: disable=no-value-for-parameter
