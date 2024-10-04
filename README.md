@@ -7,24 +7,40 @@ as presented in the paper.
 
 Before building and evaluating gittuf, you will need to install a few packages:
 
-- A recent version of Python
-  - The `click` library
-- Git 2.43 or greater
+- A recent version of Python 3
+  - [The `click` library](https://pypi.org/project/click/)
+- [Git, 2.43 or greater](https://git-scm.com/downloads)
 - GNU `make`
-- The Go toolchain
+- [The Go toolchain, 1.22 or greater](https://go.dev/doc/install)
+
+Installation of these tools varies with the operating system used.
 
 A reboot or shell reload is recommended after installing the prerequisites, as
 updates to your PATH need to take effect before building gittuf will succeed.
 
 ## Building gittuf
 
-Once all prerequisites are installed, download the source code for gittuf
-v0.6.0, available
-[here](https://github.com/gittuf/gittuf/archive/refs/tags/v0.6.0.zip). Unzip the
-archive, open a terminal in the unzipped directory, and run the `make` command.
-Build tests may take some time depending on your hardware and operating system,
-but are important for ensuring the proper functioning of gittuf on your
+Once all prerequisites are installed, download the source code for gittuf,
+available [here](https://github.com/gittuf/gittuf). Use the `main` branch.
+Cloning using Git is preferred, but downloading the ZIP archive will work as
+well.
+
+**To clone both repositories, run:**
+```sh
+git clone https://github.com/gittuf/gittuf
+git clone https://github.com/gittuf/ndss-eval
+```
+
+Open a terminal inside the downloaded repository directory and run the `make`
+command. Build tests may take some time depending on your hardware and operating
+system, but are important for ensuring the proper functioning of gittuf on your
 platform.
+
+**To build gittuf, run:**
+```sh
+cd gittuf
+make
+```
 
 ## Running Evaluations
 
@@ -33,24 +49,26 @@ experiment, simply pass it to Python, e.g. `python3 experiment1.py`. The script
 will then walk you through the steps in the experiment. Simply press the `Enter`
 key to advance to the next step.
 
-Each command is checked for proper functioning and return code. In the case of
-an error, the script will print out the issue and abort.
+Each command is checked for the proper return code. In the case of an error, the
+script will print out the issue and abort.
 
-Note that the Python scripts should not be moved from where they are, as they
-depend on accessing the keys contained in the `keys` folder. You can however
-select a custom location for where the script should 
+Note that the Python scripts should not be moved from where they are in this
+evaluation repository, as they depend on accessing the keys contained in the
+`keys` folder. You can however select a custom location for where the script
+should write the repository used for the experiment.
 
 ### Customization
 
-Each script file supports the same options as follows:
+Each script file supports these options:
 
-- `--automatic <False | True>`: Runs the demo without waiting on input to
+- `--automatic [False | True]`: Runs the demo without waiting on input to
   proceed to the next
   step.
 
 - `--repository-directory <directory>`: Set a custom directory for the working
-  repository. Note that this directory is not automatically deleted by the
-  script after it exits.
+  repository. Unlike the standard functionality with a temporary directory, the
+  directory specified here is not automatically deleted by the script after it
+  exits.
 
 ## Experiment Details
 
@@ -70,6 +88,11 @@ policy, with both developers signing off on the change.
 Developer 1 then attempts to add another rule without developer 2's agreement,
 which causes verification to fail.
 
+**To run the experiment, run:**
+```sh
+python3 experiment1.py
+```
+
 ### Experiment 2 - Delegations
 
 This epxeriment simulates utilization of gittuf's delegations feature.
@@ -81,6 +104,11 @@ Developer 2 then makes a change to the `feature` branch.
 
 When the developer attempts to verify the changes made to policy and branches,
 gittuf alerts them to the unathorized changes.
+
+**To run the experiment, run:**
+```sh
+python3 experiment2.py
+```
 
 ### Experiment 3 - RSL Divergence
 
@@ -97,6 +125,11 @@ makes a commit and pushes it to the remote repository. User A then attempts to
 pull the latest changes, but is warned that their branch has diverged from what
 is on the remote repository.
 
+**To run the experiment, run:**
+```sh
+python3 experiment3.py
+```
+
 ### Experiment 4 - Policy Violation and Independent Verification
 
 This experiment simulates a scenario where an user writes to a part of a
@@ -111,3 +144,8 @@ branch, submits a commit that affects the `main` branch.
 Another developer then clones the repository onto their machine and attempts to
 verify the changes, but gittuf raises an alert that an unauthorized signature is
 on a commit (against the policy).
+
+**To run the experiment, run:**
+```sh
+python3 experiment4.py
+```
