@@ -3,7 +3,10 @@
 This repository contains the scripts and documentation needed to evaluate gittuf
 as presented in the paper "Rethinking Trust in Forge-Based Git Security".
 
-## Using the Dockerfile
+The evaluation can be setup by using the provided Dockerfile or manually
+installing each component.
+
+## Option A - Using the Dockerfile
 
 This repository includes a Dockerfile that will configure a container with the
 experiments.
@@ -22,10 +25,10 @@ docker build -t gittuf-ndss-eval .
 docker run -it gittuf-ndss-eval
 ```
 
-Then, proceed to "experiment details" below to run the experiment scripts in the
-container.
+Once completed, proceed to "experiment details" below to run the experiment
+scripts in the container.
 
-## Pre-requisites
+## Option B - Manual Installation
 
 Before building and evaluating gittuf, you will need to install a few packages:
 
@@ -39,9 +42,9 @@ Installation of these tools varies with the operating system used.
 A reboot or shell reload is recommended after installing the prerequisites, as
 updates to your PATH need to take effect before building gittuf will succeed.
 
-## Building gittuf
+### Building gittuf
 
-### Install Latest Version Using Go
+#### Install Latest Version Using Go
 
 Once Go 1.22 or higher is installed and your PATH is configured to include
 $GOBIN, you can install gittuf using `go install`.
@@ -56,7 +59,7 @@ This will fetch the latest release of gittuf and place the binary in your
 $GOBIN. It is important to ensure that this binary is in your PATH for the
 experiments!
 
-### Build from Source
+#### Build from Source
 
 Alternatively, you can build from gittuf from source. First, download the source
 code for gittuf, available [here](https://github.com/gittuf/gittuf). Use the
@@ -151,7 +154,7 @@ python3 experiment1.py
 
 ### Experiment 2 - Delegations
 
-This eexperiment simulates utilization of gittuf's granular delegations feature
+This experiment simulates utilization of gittuf's granular delegations feature
 that allows for distributing policy declaration responsibilities amongst
 multiple developers without overprivileging them.
 
@@ -165,6 +168,10 @@ alerts them that they are not trusted for the branch. In summary, this
 highlights that gittuf's delegations can be used to enable developers to extend
 the policy in limited ways: developer 1 is trusted to delegate trust only in the
 `main` branch.
+
+The following diagram illustrates the trust hierarchy:
+
+![Trust diagram](images/ex2-delegations.png)
 
 **To run the experiment, run:**
 
