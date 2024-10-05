@@ -215,6 +215,13 @@ Another developer then clones the repository onto their machine and attempts to
 verify the changes, but gittuf raises an alert that an unauthorized signature is
 on a commit (against the policy).
 
+Developer 2 then reverts the unauthorized commit and revokes the RSL entry for
+the commit, successfully restoring the repository. Note that even though
+developer 2 is only authorized to make changes to the `main` branch, they were
+still able to _fix_ the violation. This is because any user who is allowed to
+write to the repository at all is allowed to fix it to bring it back into
+compliance with policy. 
+
 **To run the experiment, run:**
 
 ```sh

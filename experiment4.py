@@ -12,6 +12,7 @@ import os
 import shutil
 import tempfile
 import click
+import subprocess
 
 from utils import prompt_key, display_command, run_command, check_binaries, print_section
 
@@ -19,7 +20,8 @@ REQUIRED_BINARIES = ["git", "gittuf", "ssh-keygen"]
 
 REPOSITORY_STEPS = 3
 GITTUF_STEPS = 7
-DEMO_STEPS = 9
+DEMO_STEPS = 10
+RECOVERY_STEPS = 5
 
 @click.command()
 @click.option(
@@ -36,7 +38,7 @@ def experiment4(automatic, repository_directory):
     print("gittuf NDSS Artifact Evaluation - Experiment 4")
 
     # Repository Setup
-    print_section("[1 / 3] Repository Setup")
+    print_section("[1 / 4] Repository Setup")
 
     step = 1
 
@@ -73,6 +75,7 @@ def experiment4(automatic, repository_directory):
     targets_private_key_path = os.path.join(tmp_keys_dir, "targets")
     unauthorized_private_key_path = os.path.join(tmp_keys_dir, "unauthorized")
     dev1_private_key_path = os.path.join(tmp_keys_dir, "developer1")
+    dev2_private_key_path = os.path.join(tmp_keys_dir, "developer2")
 
     targets_public_key_path = os.path.join(tmp_keys_dir, "targets.pub")
     dev1_public_key_path = os.path.join(tmp_keys_dir, "developer1.pub")
@@ -109,7 +112,7 @@ def experiment4(automatic, repository_directory):
     display_command("export PAGER=cat")
 
     # gittuf Setup
-    print_section("[2 / 3] gittuf Setup")
+    print_section("[2 / 4] gittuf Setup")
 
     step = 1
 
@@ -165,8 +168,8 @@ def experiment4(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 0)
 
-    # RSL Manipulation
-    print_section("[3 / 3] Write Rule Violations")
+    # Write rule violation
+    print_section("[3 / 4] Write Rule Violations")
 
     step = 1
 
@@ -252,6 +255,53 @@ def experiment4(automatic, repository_directory):
     run_command(cmd, 1)
 
     print("\n... but is warned by gittuf that there's a policy violation!")
+
+    # Recovery
+    print_section("[4 / 4] Recovery")
+
+    step = 1
+
+    step = prompt_key(automatic, step, REPOSITORY_STEPS, "Set repo config to use developer 2's identity and test key")
+    cmd = "git config --local gpg.format ssh"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local commit.gpgsign true"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = f"git config --local user.signingkey {dev2_private_key_path}"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local user.name gittuf-demo"
+    display_command(cmd)
+    run_command(cmd, 0)
+    cmd = "git config --local user.email gittuf.demo@example.com"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, RECOVERY_STEPS, "Revert the problematic commit")
+    cmd = "git revert --no-edit HEAD"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    rsl_id = subprocess.check_output(["git", "show", "--format='%H'", "refs/gittuf/reference-state-log"]).decode('utf-8')
+
+    step = prompt_key(automatic, step, RECOVERY_STEPS,
+    "Add an annotation to the RSL invalidating the previous commit's RSL entry")
+    cmd = f"gittuf rsl annotate --skip -m 'Undo malicious commit' {rsl_id}"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, RECOVERY_STEPS, "Record change to main in RSL")
+    cmd = "gittuf rsl record main"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    step = prompt_key(automatic, step, RECOVERY_STEPS, "Now, the user attempts to verify the state of the repository again...")
+    cmd = "gittuf --verbose verify-ref main"
+    display_command(cmd)
+    run_command(cmd, 0)
+
+    print("... and finds that the issue has been fixed.")
 
 if __name__ == "__main__":
     check_binaries(REQUIRED_BINARIES)
