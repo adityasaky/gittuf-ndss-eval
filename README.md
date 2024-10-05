@@ -25,7 +25,7 @@ docker build -t gittuf-ndss-eval .
 docker run -it gittuf-ndss-eval
 ```
 
-Once completed, proceed to "experiment details" below to run the experiment
+Once completed, proceed to "Running Evaluations" below to run the experiment
 scripts in the container.
 
 ## Option B - Manual Installation
@@ -94,11 +94,11 @@ Clone this repository to get the experiment scripts.
 git clone https://github.com/adityasaky/gittuf-ndss-eval
 ```
 
-Ensure that Python 3 is installed. This README assumes that it's available as
-`python3` in your PATH, though this may vary based on your operating system.
-Also install the evaluation script dependencies via the provided
-`requirements.txt` file. This can be using `pip` in a virtual environment or
-your system package manager.
+If you chose the manual installation process, ensure that Python 3 is installed.
+This README assumes that it's available as `python3` in your PATH, though this
+may vary based on your operating system. Also install the evaluation script
+dependencies via the provided `requirements.txt` file. This can be using `pip`
+in a virtual environment or your system package manager.
 
 Each experiment is contained in its respective Python file. To run an
 experiment, simply pass it to Python, e.g. `python3 experiment1.py`. The script
@@ -202,7 +202,7 @@ python3 experiment3.py
 
 ### Experiment 4 - Policy Violation and Independent Verification
 
-This experiment simulates a scenario where an user writes to a part of a
+This experiment simulates a scenario where a user writes to a part of a
 repository they are not allowed to; another user then pulls the latest copy of
 the repository and then attempts to verify the changes.
 
