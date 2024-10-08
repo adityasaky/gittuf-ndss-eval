@@ -47,7 +47,7 @@ updates to your PATH need to take effect before building gittuf will succeed.
 #### Install Latest Version Using Go
 
 Once Go 1.22 or higher is installed and your PATH is configured to include
-$GOBIN, you can install gittuf using `go install`.
+`$GOPATH/bin`, you can install gittuf using `go install`.
 
 **Run:**
 
@@ -56,7 +56,7 @@ go install github.com/gittuf/gittuf@latest
 ```
 
 This will fetch the latest release of gittuf and place the binary in your
-$GOBIN. It is important to ensure that this binary is in your PATH for the
+`$GOPATH/bin`. It is important to ensure that this binary is in your PATH for the
 experiments!
 
 #### Build from Source
