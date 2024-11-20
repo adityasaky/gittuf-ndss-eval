@@ -52,19 +52,18 @@ Once Go 1.22 or higher is installed and your PATH is configured to include
 **Run:**
 
 ```sh
-go install github.com/gittuf/gittuf@latest
+go install github.com/gittuf/gittuf@v0.7.0
 ```
 
-This will fetch the latest release of gittuf and place the binary in your
-`$GOPATH/bin`. It is important to ensure that this binary is in your PATH for the
-experiments!
+This will fetch gittuf `v0.7.0` and place the binary in your `$GOPATH/bin`. It
+is important to ensure that this binary is in your PATH for the experiments!
 
 #### Build from Source
 
 Alternatively, you can build from gittuf from source. First, download the source
 code for gittuf, available [here](https://github.com/gittuf/gittuf). Use the
-`main` branch or the latest tagged release. Cloning using Git is preferred, but
-downloading the ZIP archive will work as well.
+`v0.7.0` release. Cloning using Git is preferred, but downloading the ZIP
+archive will work as well.
 
 **To clone, run:**
 

@@ -6,7 +6,7 @@ WORKDIR /root
 
 ENV PATH="/root/go/bin:$PATH"
 
-RUN go install github.com/gittuf/gittuf@latest
+RUN go install github.com/gittuf/gittuf@v0.7.0
 
 RUN gittuf version
 
