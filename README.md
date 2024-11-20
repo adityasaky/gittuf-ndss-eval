@@ -61,9 +61,9 @@ is important to ensure that this binary is in your PATH for the experiments!
 #### Build from Source
 
 Alternatively, you can build from gittuf from source. First, download the source
-code for gittuf, available [here](https://github.com/gittuf/gittuf). Use the
-`v0.7.0` release. Cloning using Git is preferred, but downloading the ZIP
-archive will work as well.
+code for gittuf, version `v0.7.0`, available
+[here](https://github.com/gittuf/gittuf/releases/tag/v0.7.0). You can clone the
+repository using Git or download the ZIP archive.
 
 **To clone, run:**
 
