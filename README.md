@@ -35,7 +35,7 @@ Before building and evaluating gittuf, you will need to install a few packages:
 - A recent version of Python 3
 - [Git, 2.43 or greater](https://git-scm.com/downloads)
 - GNU `make`
-- [The Go toolchain, 1.22 or greater](https://go.dev/doc/install)
+- [The Go toolchain, 1.22.8 or greater](https://go.dev/doc/install)
 
 Installation of these tools varies with the operating system used.
 
