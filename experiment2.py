@@ -135,7 +135,7 @@ def experiment2(automatic, repository_directory):
     run_command(cmd, 0)
 
     # Add a rule authorizing developer 1 to modify the main branch
-    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the main branch")
+    step = prompt_key(automatic, step, GITTUF_STEPS, "Add a rule to protect the main branch granting trust to developer 1")
     cmd = (
         "gittuf policy add-rule"
         f" -k {targets_private_key_path}"
@@ -238,7 +238,7 @@ def experiment2(automatic, repository_directory):
     display_command(cmd)
     run_command(cmd, 1)
 
-    print("\n...and finds out that developer 2 was not allowed in gittuf policy to grant them permissions for the feature branch!")
+    print("\n...and finds out that developer 1 was not allowed in gittuf policy to grant them permissions for the feature branch!")
 
 
 if __name__ == "__main__":
