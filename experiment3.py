@@ -23,7 +23,7 @@ DEMO_STEPS = 14
 
 @click.command()
 @click.option(
-    "--automatic", default=False, type=bool,
+    "--automatic", default=False, type=bool, is_flag=True,
     help="Whether to wait for input before each command is run."
 )
 @click.option(
